@@ -40,36 +40,45 @@ class Parser(object):
     def parse(self):
         try:
             term = self.term()
-        except (ParseError, IndexError):
+        except (ParseError):
             raise ParseError
 
-        if len(self.token) != 0:
+        if not(self.is_token_empty()):
             raise ParseError
         return term
 
+    def next_token(self):
+        return self.token[0]
+
+    def is_token_empty(self):
+        return len(self.token) == 0
+
     def try_parse(self, parsers):
         token = self.token
-        try:
-            return parsers[0]()
-        except ParseError:
-            self.token = token
-            if len(parsers) != 0:
+        if self.is_token_empty:
+            try:
+                return parsers[0]()
+            except ParseError:
+                self.token = token
                 return self.try_parse(parsers[1:])
-            else:
-                raise ParseError
-
-    def consume(self, c):
-        if len(self.token) == 0:
+        else:
             raise ParseError
-        elif self.token[0].__class__ == c:
+
+    def match(self, c):
+        def consume_token():
             self.token = self.token[1:]
+
+        if self.is_token_empty():
+            raise ParseError
+        elif self.next_token().__class__ == c:
+            consume_token()
         else:
             raise ParseError
 
     def term(self):
         def add():
             t1 = self.form()
-            self.consume(L.Plus)
+            self.match(L.Plus)
             t2 = self.term()
             return Add(t1, t2)
 
@@ -78,14 +87,14 @@ class Parser(object):
 
     def form(self):
         def num():
-            head = self.token[0]
-            self.consume(L.Num)
+            head = self.next_token()
+            self.match(L.Num)
             return Num(head.value)
 
         def paren():
-            self.consume(L.LParen)
+            self.match(L.LParen)
             term = self.term()
-            self.consume(L.RParen)
+            self.match(L.RParen)
             return term
 
         return self.try_parse([paren, num])
