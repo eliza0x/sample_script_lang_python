@@ -27,7 +27,7 @@ class ParseError(Exception):
 
 
 '''
-T  ::= V '+' F | F | empty
+T  ::= F '+' T | F | empty
 
 F  ::= (T) | number
 '''
