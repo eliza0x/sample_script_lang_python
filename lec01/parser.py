@@ -54,6 +54,30 @@ V  ::= (T)
 
 
 def term_parser(token):
+    def plus_term_parser(token, t1):
+        next_token = consume(token, L.Plus)
+        next_token, t2 = term_parser(next_token)
+        return next_token, Add(t1, t2)
+
+    def paren_parser(token):
+        next_token = consume(token, L.LParen)
+        next_token, term = term_parser(next_token)
+        next_token = consume(next_token, L.RParen)
+        return next_token, term
+
+    def value_parser(token):
+        def num_parser(token):
+            next_token = consume(token, L.Num)
+            return next_token, Num(token[0].value)
+
+        try:
+            return paren_parser(token)
+        except ParseError:
+            try:
+                return num_parser(token)
+            except ParseError:
+                raise ParseError
+
     print(list(map(str, token)))
     try:
         next_token, t1 = value_parser(token)
@@ -63,31 +87,3 @@ def term_parser(token):
             return value_parser(token)
         except ParseError:
             raise ParseError
-
-
-def value_parser(token):
-    try:
-        return paren_parser(token)
-    except ParseError:
-        try:
-            return num_parser(token)
-        except ParseError:
-            raise ParseError
-
-
-def plus_term_parser(token, t1):
-    next_token = consume(token, L.Plus)
-    next_token, t2 = term_parser(next_token)
-    return next_token, Add(t1, t2)
-
-
-def paren_parser(token):
-    next_token = consume(token, L.LParen)
-    next_token, term = term_parser(next_token)
-    next_token = consume(next_token, L.RParen)
-    return next_token, term
-
-
-def num_parser(token):
-    next_token = consume(token, L.Num)
-    return next_token, Num(token[0].value)
