@@ -26,13 +26,11 @@ class ParseError(Exception):
     pass
 
 
-def consume(token, c):
-    if len(token) == 0:
-        raise ParseError
-    elif token[0].__class__ == c:
-        return token[1:]
-    else:
-        raise ParseError
+'''
+T  ::= V '+' F | F | empty
+
+F  ::= (T) | number
+'''
 
 
 def parse(token):
@@ -42,22 +40,40 @@ def parse(token):
     return term
 
 
-'''
-T  ::= V T2
+def try_parse(token, parsers):
+    try:
+        return parsers[0](token)
+    except ParseError:
+        if len(parsers) != 0:
+            return try_parse(token, parsers[1:])
+        else:
+            raise ParseError
 
-T2 ::= '+' T
-     | empty
 
-V  ::= (T)
-      | number
-'''
+def consume(token, c):
+    if len(token) == 0:
+        raise ParseError
+    elif token[0].__class__ == c:
+        return token[1:]
+    else:
+        raise ParseError
 
 
 def term_parser(token):
-    def plus_term_parser(token, t1):
-        next_token = consume(token, L.Plus)
+    def add_parser(token):
+        next_token, t1 = form_parser(token)
+        next_token = consume(next_token, L.Plus)
         next_token, t2 = term_parser(next_token)
         return next_token, Add(t1, t2)
+
+    print(list(map(str, token)))
+    return try_parse(token, [add_parser, form_parser])
+
+
+def form_parser(token):
+    def num_parser(token):
+        next_token = consume(token, L.Num)
+        return next_token, Num(token[0].form)
 
     def paren_parser(token):
         next_token = consume(token, L.LParen)
@@ -65,25 +81,4 @@ def term_parser(token):
         next_token = consume(next_token, L.RParen)
         return next_token, term
 
-    def value_parser(token):
-        def num_parser(token):
-            next_token = consume(token, L.Num)
-            return next_token, Num(token[0].value)
-
-        try:
-            return paren_parser(token)
-        except ParseError:
-            try:
-                return num_parser(token)
-            except ParseError:
-                raise ParseError
-
-    print(list(map(str, token)))
-    try:
-        next_token, t1 = value_parser(token)
-        return plus_term_parser(next_token, t1)
-    except ParseError:
-        try:
-            return value_parser(token)
-        except ParseError:
-            raise ParseError
+    return try_parse(token, [paren_parser, num_parser])
