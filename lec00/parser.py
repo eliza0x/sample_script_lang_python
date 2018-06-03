@@ -26,9 +26,8 @@ class ParseError(Exception):
     pass
 
 
-
-
-# 与えられたクラスとトークンが一致することを確認、一致していれば消費、一致しなければ例外を投げる
+# 与えられたクラスとトークンが一致することを確認
+# 一致していれば消費、一致しなければ例外を投げる
 def consume(token, c):
     if len(token) == 0:
         raise ParseError
@@ -74,10 +73,11 @@ def plus_parser(token):
     # 初めに数値
     next_token, t1 = num_parser(token)
     # 次に'+'
-    next_token = consume(token, L.Plus)
+    next_token = consume(next_token, L.Plus)
     # 次に式
     next_token, t2 = term_parser(next_token)
     return next_token, Add(t1, t2)
+
 
 # 数値
 def num_parser(token):
